@@ -2,7 +2,12 @@
 
 #include "Point.h"
 #include "Geometry.h"
+#include "Utilities.h"
 
+const Vector Vector::Zero(0, 0);
+
+Vector::Vector() : x(0), y(0)
+{ }
 Vector::Vector(double x, double y) : x(x), y(y)
 { }
 Vector::Vector(const Point& a, const Point& b) : x(b.x - a.x), y(b.y - a.y)
@@ -17,25 +22,41 @@ bool Vector::operator!=(const Vector& other) const
 {
 	return !operator==(other);
 }
+Vector Vector::operator-() const
+{
+	return Vector(-x, -y);
+}
 Vector Vector::operator+(const Vector& other) const
 {
 	return Vector(x + other.x, y + other.y);
+}
+void Vector::operator+=(const Vector& other)
+{
+	*this = *this + other;
 }
 Vector Vector::operator-(const Vector& other) const
 {
 	return Vector(x - other.x, y - other.y);
 }
-Vector Vector::operator-() const
+void Vector::operator-=(const Vector& other)
 {
-	return Vector(-x, -y);
+	*this = *this - other;
 }
 Vector Vector::operator*(double k) const
 {
 	return Vector(x * k, y * k);
 }
+void Vector::operator*=(double k)
+{
+	*this = *this * k;
+}
 Vector Vector::operator/(double k) const
 {
 	return Vector(x / k, y / k);
+}
+void Vector::operator/=(double k)
+{
+	*this = *this / k;
 }
 double Vector::getLength() const
 {
@@ -43,7 +64,21 @@ double Vector::getLength() const
 }
 void Vector::resize(double length)
 {
-	*this = *this / getLength() * length;
+	if (doubleEqual(length, 0) || doubleEqual(getLength(), 0))
+		*this = Zero;
+	else
+		*this = *this / getLength() * length;
+}
+void Vector::increase(double value)
+{
+	resize(getLength() + value);
+}
+void Vector::decrease(double value)
+{
+	if (value < getLength())
+		resize(getLength() - value);
+	else
+		*this = Zero;
 }
 void Vector::rotate90()
 {

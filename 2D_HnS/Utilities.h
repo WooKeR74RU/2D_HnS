@@ -8,3 +8,5 @@ T sqr(T val)
 {
 	return val * val;
 }
+
+void drawDot(double x, double y);
