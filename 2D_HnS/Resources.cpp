@@ -1,6 +1,6 @@
 #include "Resources.h"
 
-Resources::Resources() : input("input.txt"), output("Resources/output.txt")
+Resources::Resources() : input("Resources/input.txt"), output("Resources/output.txt")
 { }
 
 Resources& RS()

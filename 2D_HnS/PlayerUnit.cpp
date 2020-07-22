@@ -3,23 +3,14 @@
 #include "Resources.h"
 #include "Utilities.h"
 
-PlayerUnit::PlayerUnit() : _isInDash(false), _size(75), _fragmentsCount(10)
+PlayerUnit::PlayerUnit(int size, int sidesCount)
 {
+	_size = size;
+	_sidesCount = sidesCount;
+	_isInDash = false;
+
 	_equilateralPolygon.setRadius(_size / 2);
-	_equilateralPolygon.setSidesCount(_fragmentsCount);
-	static const double LENGTH_COEFFICIENT = 0.475;
-	static const double BODY_THICKNESS_COEFFICIENT = 0.05;
-	for (int i = 0; i < MAX_FRAGMENTS_COUNT; i++)
-	{
-		_tentacles[i].setLength(_size * LENGTH_COEFFICIENT);
-		_tentacles[i].setBodyThickness(_size * BODY_THICKNESS_COEFFICIENT);
-		_tentacles[i].setColor(sf::Color::Black);
-		_tentacles[i].update(sf::Time::Zero);
-	}
-	for (int i = 0; i < _fragmentsCount; i++)
-		_tentacles[i].setRotation(270 + 360.0 / _fragmentsCount * i);
-	_center.setRadius(_size * BODY_THICKNESS_COEFFICIENT / 2);
-	_center.setPosition(-_size * BODY_THICKNESS_COEFFICIENT / 2, -_size * BODY_THICKNESS_COEFFICIENT / 2);
+	_equilateralPolygon.setSidesCount(_sidesCount);
 }
 
 void PlayerUnit::update(sf::Time elapsed)
@@ -98,40 +89,10 @@ void PlayerUnit::update(sf::Time elapsed)
 	sf::View view(RS().window.getView());
 	view.setCenter(getPosition());
 	RS().window.setView(view);
-
-	bool isCountChanged = false;
-	if (RS().eventInput.isKeyPressed(sf::Keyboard::Add))
-	{
-		if (_fragmentsCount < MAX_FRAGMENTS_COUNT)
-		{
-			_fragmentsCount++;
-			isCountChanged = true;
-		}
-	}
-	if (RS().eventInput.isKeyPressed(sf::Keyboard::Subtract))
-	{
-		if (MIN_FRAGMENTS_COUNT < _fragmentsCount)
-		{
-			_fragmentsCount--;
-			isCountChanged = true;
-		}
-	}
-	if (isCountChanged)
-	{
-		_equilateralPolygon.setSidesCount(_fragmentsCount);
-		for (int i = 0; i < _fragmentsCount; i++)
-			_tentacles[i].setRotation(270 + 360.0 / _fragmentsCount * i);
-	}
-
-	for (int i = 0; i < _fragmentsCount; i++)
-		_tentacles[i].update(elapsed);
 }
 
 void PlayerUnit::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
 	states.transform *= getTransform();
 	target.draw(_equilateralPolygon, states);
-	//for (int i = 0; i < _fragmentsCount; i++)
-	//	target.draw(_tentacles[i], states);
-	//target.draw(_center, states);
 }

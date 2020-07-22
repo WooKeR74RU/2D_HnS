@@ -8,7 +8,11 @@
 class AsciiFilter
 {
 public:
-	AsciiFilter(int windowWidth, int windowHeight, const std::string& fontPath, int characterSize, bool isBoldOn, sf::Color backgroundColor = sf::Color::Black);
+	enum Mode { Off, Standard, GlyphsOnly, Adaptive };
+
+	AsciiFilter(int windowWidth, int windowHeight, const std::string& fontPath, int characterSize, sf::Color glyphsColor = sf::Color::White, Mode mode = Standard, bool isBoldOn = true, sf::Color backgroundColor = sf::Color::Black);
+
+	void setMode(Mode mode);
 
 	void applyTo(sf::RenderWindow& window);
 
@@ -18,11 +22,12 @@ private:
 	int _windowWidth;
 	int _windowHeight;
 	sf::Font _font;
-	int _characterSize;
+	int _glyphSize;
+	sf::Color _glyphsColor;
+	Mode _mode;
 	bool _isBoldOn;
 	sf::Color _backgroundColor;
 
-	int _charCount;
 	int _glyphWidth;
 	int _glyphHeight;
 	int _matrixW;

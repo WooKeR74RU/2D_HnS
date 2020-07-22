@@ -6,15 +6,18 @@
 #include "Geometry.h"
 #include "Utilities.h"
 
-Tentacle::Tentacle() : _length(450), _bodyThickness(40), _color(sf::Color::White)
+Tentacle::Tentacle() : _length(450), _bodyThickness(40), _color(sf::Color::White), _behaviourSpeed(1)
 {
+	_triangleStrip.setPrimitiveType(sf::TriangleStrip);
+
 	_body.setRadius(_bodyThickness / 2);
 	_body.setPosition(-_bodyThickness / 2, -_bodyThickness / 2);
 	_body.setFillColor(_color);
 
-	_triangleStrip.setPrimitiveType(sf::TriangleStrip);
+	//_outline.setPrimitiveType(sf::LineStrip);
 
-	updateBehFuncM();
+	updateBehaviourExternalFactors();
+	updateBehaviourInternalFactors();
 	
 	update(sf::Time::Zero);
 }
@@ -22,19 +25,26 @@ Tentacle::Tentacle() : _length(450), _bodyThickness(40), _color(sf::Color::White
 void Tentacle::setLength(double length)
 {
 	_length = length;
-	updateBehFuncM();
+	updateBehaviourInternalFactors();
 }
 void Tentacle::setBodyThickness(double bodyThickness)
 {
 	_bodyThickness = bodyThickness;
 	_body.setRadius(_bodyThickness / 2);
 	_body.setPosition(-_bodyThickness / 2, -_bodyThickness / 2);
-	updateBehFuncM();
+	updateBehaviourExternalFactors();
 }
 void Tentacle::setColor(sf::Color color)
 {
 	_color = color;
 	_body.setFillColor(_color);
+}
+
+void Tentacle::setBehaviourSpeed(double behaviourSpeed)
+{
+	_behaviourSpeed = behaviourSpeed;
+	updateBehaviourExternalFactors();
+	updateBehaviourInternalFactors();
 }
 
 void Tentacle::update(sf::Time elapsed)
@@ -48,8 +58,8 @@ void Tentacle::update(sf::Time elapsed)
 
 	for (int i = 0; i < BEHAVIOR_COMPONENTS; i++)
 	{
-		_behFuncM1[i].update(elapsed);
-		_behFuncM2[i].update(elapsed);
+		_behaviourExternalFactors[i].update(elapsed);
+		_behaviourInternalFactors[i].update(elapsed);
 	}
 
 	double curX = 0;
@@ -128,12 +138,21 @@ void Tentacle::update(sf::Time elapsed)
 	{
 		_triangleStrip[2 * i].position = sf::Vector2f(_leftBound[i].x, _leftBound[i].y);
 		_triangleStrip[2 * i].color = _color;
+		//int colorVal = 128 + 128 * (i + 1) / boundLen;
+		//_triangleStrip[2 * i].color = sf::Color(colorVal, 0, 0);
 		if (i != boundLen - 1)
 		{
 			_triangleStrip[2 * i + 1].position = sf::Vector2f(_rightBound[i].x, _rightBound[i].y);
 			_triangleStrip[2 * i + 1].color = _color;
+			//_triangleStrip[2 * i + 1].color = sf::Color(colorVal, 0, 0);
 		}
 	}
+
+	//_outline.resize(verticesCount);
+	//for (int i = 0; i < boundLen; i++)
+	//	_outline[i].position = sf::Vector2f(_leftBound[i].x, _leftBound[i].y);
+	//for (int i = 0; i < boundLen - 1; i++)
+	//	_outline[boundLen + i].position = sf::Vector2f(_rightBound[boundLen - i - 1].x, _rightBound[boundLen - i - 1].y);
 }
 
 void Tentacle::draw(sf::RenderTarget& target, sf::RenderStates states) const
@@ -143,29 +162,38 @@ void Tentacle::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	target.draw(_body, states);
 }
 
-void Tentacle::updateBehFuncM()
-{
-	static const double BEHAVIOUR_SPEED = 1;
+//void Tentacle::drawOutline(sf::RenderTarget& target) const
+//{
+//	target.draw(_outline, getTransform());
+//}
 
+void Tentacle::updateBehaviourExternalFactors()
+{
 	static const double EXT_MIN_FACTOR = -0.3;
 	static const double EXT_MAX_FACTOR = 0.3;
-	static const double EXT_SPEED_FACTOR = 0.5 * BEHAVIOUR_SPEED;
-	static const double INT_MIN_FACTOR = 0.12;
-	static const double INT_MAX_FACTOR = 0.18;
-	static const double INT_SPEED_FACTOR = 0.5 * BEHAVIOUR_SPEED;
-
+	double extSpeedFactor = 0.5 * _behaviourSpeed;
 	for (int i = 0; i < BEHAVIOR_COMPONENTS; i++)
 	{
 		double extFactorMinValue = _bodyThickness * EXT_MIN_FACTOR;
 		double extFactorMaxValue = _bodyThickness * EXT_MAX_FACTOR;
-		double extFactorFloatingSpeed = (extFactorMaxValue - extFactorMinValue) * EXT_SPEED_FACTOR;
-		_behFuncM1[i].setLimits(extFactorMinValue, extFactorMaxValue);
-		_behFuncM1[i].setFloatingSpeed(extFactorFloatingSpeed);
+		double extFactorFloatingSpeed = (extFactorMaxValue - extFactorMinValue) * extSpeedFactor;
+		_behaviourExternalFactors[i].setLimits(extFactorMinValue, extFactorMaxValue);
+		_behaviourExternalFactors[i].setFloatingSpeed(extFactorFloatingSpeed);
+	}
+}
+
+void Tentacle::updateBehaviourInternalFactors()
+{
+	static const double INT_MIN_FACTOR = 0.12;
+	static const double INT_MAX_FACTOR = 0.18;
+	double intSpeedFactor = 0.5 * _behaviourSpeed;
+	for (int i = 0; i < BEHAVIOR_COMPONENTS; i++)
+	{
 		double intFactorMinValue = _length * INT_MIN_FACTOR;
 		double intFactorMaxValue = _length * INT_MAX_FACTOR;
-		double intFactorFloatingSpeed = (intFactorMaxValue - intFactorMinValue) * INT_SPEED_FACTOR;
-		_behFuncM2[i].setLimits(intFactorMinValue, intFactorMaxValue);
-		_behFuncM2[i].setFloatingSpeed(intFactorFloatingSpeed);
+		double intFactorFloatingSpeed = (intFactorMaxValue - intFactorMinValue) * intSpeedFactor;
+		_behaviourInternalFactors[i].setLimits(intFactorMinValue, intFactorMaxValue);
+		_behaviourInternalFactors[i].setFloatingSpeed(intFactorFloatingSpeed);
 	}
 }
 
@@ -179,6 +207,6 @@ double Tentacle::behaviorFunc(double curX)
 	// Example: f(x) = 15 * (sin(3 * curX / 100) + sin(2 * curX / 100) + sin(curX / 100) - sin(2.5 * curX / 100))
 	double result = 0;
 	for (int i = 0; i < BEHAVIOR_COMPONENTS; i++)
-		result += _behFuncM1[i].getValue() * sin(curX * M_PI_2 / _behFuncM2[i].getValue());
+		result += _behaviourExternalFactors[i].getValue() * sin(curX * M_PI_2 / _behaviourInternalFactors[i].getValue());
 	return result;
 }

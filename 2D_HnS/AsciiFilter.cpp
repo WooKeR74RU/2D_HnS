@@ -2,22 +2,24 @@
 
 #include <set>
 
-AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& fontPath, int characterSize, bool isBoldOn, sf::Color backgroundColor)
+AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& fontPath, int characterSize, sf::Color glyphsColor, Mode mode, bool isBoldOn, sf::Color backgroundColor)
 {
 	_windowWidth = windowWidth;
 	_windowHeight = windowHeight;
 	if (!_font.loadFromFile(fontPath))
 		std::exit(EXIT_FAILURE);
-	_characterSize = characterSize;
+	_glyphSize = characterSize;
+	_glyphsColor = glyphsColor;
+	_mode = mode;
 	_isBoldOn = isBoldOn;
 	_backgroundColor = backgroundColor;
 
-	static const int ASCII_L = 33;
+	static const int ASCII_L = 32;
 	static const int ASCII_R = 126;
 
-	_charCount = ASCII_R - ASCII_L + 1;
+	int charCount = ASCII_R - ASCII_L + 1;
 	if (_isBoldOn)
-		_charCount *= 2;
+		charCount *= 2;
 
 	auto getGlyphParamertesById = [](int id) -> std::pair<int, bool>
 	{
@@ -26,16 +28,16 @@ AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& f
 		return std::make_pair(id - (ASCII_R - ASCII_L + 1) + ASCII_L, true);
 	};
 
-	for (int i = 0; i < _charCount; i++)
-		_font.getGlyph(getGlyphParamertesById(i).first, _characterSize, getGlyphParamertesById(i).second);
-	sf::Texture fontTexture(_font.getTexture(_characterSize));
+	for (int i = 0; i < charCount; i++)
+		_font.getGlyph(getGlyphParamertesById(i).first, _glyphSize, getGlyphParamertesById(i).second);
+	sf::Texture fontTexture(_font.getTexture(_glyphSize));
 	sf::Image glyphsImage(fontTexture.copyToImage());
 
 	auto getGlyphBrightnessById = [&](int id) -> int
 	{
 		int glyphBrightness = 0;
 		std::pair<int, bool> glyphParamertes(getGlyphParamertesById(id));
-		sf::Glyph glyph(_font.getGlyph(glyphParamertes.first, _characterSize, glyphParamertes.second));
+		sf::Glyph glyph(_font.getGlyph(glyphParamertes.first, _glyphSize, glyphParamertes.second));
 		for (int i = 0; i < glyph.textureRect.height; i++)
 		{
 			for (int j = 0; j < glyph.textureRect.width; j++)
@@ -47,7 +49,7 @@ AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& f
 	static const int FORBIDDEN_GLYPHS_COUNT = 1;
 	static const int FORBIDDEN_GLYPHS[FORBIDDEN_GLYPHS_COUNT] = { 'm' };
 	std::set<int> glyphsId;
-	for (int i = 0; i < _charCount; i++)
+	for (int i = 0; i < charCount; i++)
 	{
 		bool isForbidden = false;
 		int glyphCode = getGlyphParamertesById(i).first;
@@ -81,8 +83,8 @@ AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& f
 		static const int PRIORITY_ORDER[PRIORITY_SIZE] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
 			'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 			'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-			'w', 'x', 'y', 'z', '+', '*', '=', '-', '_', '.', ':', '^', '<', '>', '~', '\'', '"', '@', '!', '#', '$', '%',
-			'&', '?', '`', ',', ';', '|', '/', '\\', '(', ')', '[', ']', '{', '}' };
+			'w', 'x', 'y', 'z', '.', '-', '_', '\'', '"', '`', '|', '/', '\\', '#', '^', '<', '>', '=', '+', '*', ':', '~',
+			'!', '?', '$', '@', '&', '%', ',', ';', '(', ')', '[', ']', '{', '}' };
 		std::map<int, int> priority;
 		for (int i = 0; i < PRIORITY_SIZE; i++)
 			priority[PRIORITY_ORDER[i]] = i;
@@ -111,7 +113,7 @@ AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& f
 		auto last = std::unique(glyphsBrightness.begin(), glyphsBrightness.end(), isEqual);
 		glyphsBrightness.resize(last - glyphsBrightness.begin());
 
-		static const double ALLOWANCE = 2;
+		static const double ALLOWANCE = 3;
 		int maxInterval = 255.0 / (glyphsBrightness.size() - 1) * ALLOWANCE;
 
 		static const double ALLOWABLE_REDUNDANCY = 0.05;
@@ -147,7 +149,7 @@ AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& f
 		for (int id : glyphsId)
 		{
 			std::pair<int, bool> glyphParamertes(getGlyphParamertesById(id));
-			sf::Glyph glyph(_font.getGlyph(glyphParamertes.first, _characterSize, glyphParamertes.second));
+			sf::Glyph glyph(_font.getGlyph(glyphParamertes.first, _glyphSize, glyphParamertes.second));
 			counterWidth[glyph.textureRect.width].push_back(id);
 			counterHeight[glyph.textureRect.height].push_back(id);
 		}
@@ -217,7 +219,7 @@ AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& f
 		for (int id : glyphsId)
 		{
 			std::pair<int, bool> glyphParamertes(getGlyphParamertesById(id));
-			sf::Glyph glyph(_font.getGlyph(glyphParamertes.first, _characterSize, glyphParamertes.second));
+			sf::Glyph glyph(_font.getGlyph(glyphParamertes.first, _glyphSize, glyphParamertes.second));
 
 			sf::Sprite sprite(fontTexture, glyph.textureRect);
 			int spriteX = offsetIndex * _glyphWidth + (_glyphWidth - glyph.textureRect.width) / 2;
@@ -260,8 +262,16 @@ AsciiFilter::AsciiFilter(int windowWidth, int windowHeight, const std::string& f
 	_renderTexture.create(_matrixW, _matrixH);
 }
 
+void AsciiFilter::setMode(Mode mode)
+{
+	_mode = mode;
+}
+
 void AsciiFilter::applyTo(sf::RenderWindow& window)
 {
+	if (_mode == Off)
+		return;
+
 	_windowContent.update(window);
 	sf::Sprite contentSprite(_windowContent);
 	contentSprite.setScale((double)_matrixW / _windowWidth, (double)_matrixH / _windowHeight);
@@ -291,7 +301,19 @@ void AsciiFilter::applyTo(sf::RenderWindow& window)
 
 	sf::View view = window.getView();
 	window.setView(window.getDefaultView());
+
+	if (_mode == GlyphsOnly || _mode == Adaptive)
+		window.clear(_glyphsColor);
+
 	window.draw(_vertexArray, sf::RenderStates(&_customFontTexture));
+
+	if (_mode == Adaptive)
+	{
+		contentSprite.setScale(1, 1);
+		contentSprite.setColor(sf::Color(255, 255, 255, 96));
+		window.draw(contentSprite);
+	}
+
 	window.setView(view);
 }
 

@@ -15,7 +15,6 @@
 #include "Resources.h"
 #include "FloatingValue.h"
 #include "Tentacle.h"
-#include "Animation.h"
 #include "PlayerUnit.h"
 #include "AsciiFilter.h"
 
@@ -24,49 +23,51 @@ int main()
 	RS().output.precision(4);
 	RS().output.setf(std::ios::fixed);
 
-	static const int WINDOW_WIDTH = 1280;
-	static const int WINDOW_HEIGHT = 720;
+	static const int WINDOW_WIDTH = 1920;
+	static const int WINDOW_HEIGHT = 1080;
 	sf::ContextSettings settings;
 	settings.antialiasingLevel = 8;
-	RS().window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "2D_HnS", sf::Style::Close, settings);
+	RS().window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "2D_HnS", sf::Style::None, settings);
 	//RS().window.setVerticalSyncEnabled(true);
 
 	sf::View view(RS().window.getView());
-	view.move(-WINDOW_WIDTH / 2, -WINDOW_HEIGHT / 2);
+	view.setCenter(0, 0);
 	RS().window.setView(view);
 
-	sf::Image icon128;
-	if (!icon128.loadFromFile("Resources/icon128.png"))
-		std::exit(EXIT_FAILURE);
-	RS().window.setIcon(128, 128, icon128.getPixelsPtr());
-
-	sf::Texture backgroundTexture;
-	if (!backgroundTexture.loadFromFile("Resources/background.png"))
-		std::exit(EXIT_FAILURE);
-	backgroundTexture.setRepeated(true);
-	int symbolWidth = 200;
-	int symbolHeight = 200;
-	int symbolsW = 2 * WINDOW_WIDTH / symbolWidth;
-	int symbolsH = 2 * WINDOW_HEIGHT / symbolHeight;
-	sf::Sprite backgroundSprite(backgroundTexture, sf::IntRect(0, 0, symbolsW * symbolWidth, symbolsH * symbolHeight));
+	//sf::Texture backgroundTexture;
+	//if (!backgroundTexture.loadFromFile("Resources/background.png"))
+	//	std::exit(EXIT_FAILURE);
+	//backgroundTexture.setRepeated(true);
+	//static const int SYMBOL_WIDTH = 200;
+	//static const int SYMBOL_HEIGHT = 200;
+	//int symbolsW = 2 * WINDOW_WIDTH / SYMBOL_WIDTH;
+	//int symbolsH = 2 * WINDOW_HEIGHT / SYMBOL_HEIGHT;
+	//sf::Sprite backgroundSprite(backgroundTexture, sf::IntRect(0, 0, symbolsW * SYMBOL_WIDTH, symbolsH * SYMBOL_HEIGHT));
 	//backgroundSprite.setColor(sf::Color(255, 255, 255, 128));
-	backgroundSprite.move(-WINDOW_WIDTH, -WINDOW_HEIGHT);
-
-	PlayerUnit playerUnit;
+	//backgroundSprite.move(-WINDOW_WIDTH, -WINDOW_HEIGHT);
 
 	//static const int N = 10;
 	//Tentacle tentacles[N];
-	//static const double BODY_THICKNESS = 50;
 	//for (int i = 0; i < N; i++)
-	//{
 	//	tentacles[i].setRotation(i * 360.0 / N);
-	//	tentacles[i].setBodyThickness(BODY_THICKNESS);
-	//}
-	//sf::CircleShape body(BODY_THICKNESS / 2);
-	//body.setPosition(-BODY_THICKNESS / 2, -BODY_THICKNESS / 2);
+	//FloatingValue lengthValue(300, 450, 100);
+	//FloatingValue bodyValue(40, 60, 30);
+	//EquilateralPolygon body(60 / 2, 4);
 	//body.setFillColor(sf::Color::Black);
 
-	AsciiFilter asciiFilter(WINDOW_WIDTH, WINDOW_HEIGHT, "Resources/consolas.ttf", 12, true);
+	static const int N = 100;
+	Tentacle tentacles[N];
+	for (int i = 0; i < N; i++)
+	{
+		tentacles[i].setBehaviourSpeed(0.5);
+		tentacles[i].setLength(750);
+		tentacles[i].setBodyThickness(75);
+	}
+
+	PlayerUnit playerUnit(65, 4);
+	//playerUnit.setPosition(-WINDOW_WIDTH / 3, 0);
+
+	AsciiFilter asciiFilter(WINDOW_WIDTH, WINDOW_HEIGHT, "Resources/consolas.ttf", 12, sf::Color::Green, AsciiFilter::Off);
 
 	sf::Clock clock;
 
@@ -83,17 +84,35 @@ int main()
 
 		sf::Time elapsed = clock.restart();
 
-		//for (int i = 0; i < N; i++)
-		//	tentacles[i].update(elapsed);
+		for (int i = 0; i < N; i++)
+			tentacles[i].update(elapsed);
+
 		playerUnit.update(elapsed);
+
+		if (RS().eventInput.isKeyPressed(sf::Keyboard::Num1))
+			asciiFilter.setMode(AsciiFilter::Standard);
+		if (RS().eventInput.isKeyPressed(sf::Keyboard::Num2))
+			asciiFilter.setMode(AsciiFilter::GlyphsOnly);
+		if (RS().eventInput.isKeyPressed(sf::Keyboard::Num3))
+			asciiFilter.setMode(AsciiFilter::Adaptive);
+		if (RS().eventInput.isKeyPressed(sf::Keyboard::Num4))
+			asciiFilter.setMode(AsciiFilter::Off);
 
 		RS().window.clear();
 
 		//for (int i = 0; i < N; i++)
 		//	RS().window.draw(tentacles[i]);
-		//RS().window.draw(body);
 
-		RS().window.draw(backgroundSprite);
+		for (int i = 0; i < N; i++)
+		{
+			float angle = i * 2 * M_PI / N - M_PI / 2;
+			float x = std::cos(angle) * 1200;
+			float y = std::sin(angle) * 900;
+			tentacles[i % 3].setPosition(x, y);
+			tentacles[i % 3].setRotation(90 + i * 360.0 / N);
+			RS().window.draw(tentacles[i % 3]);
+		}
+
 		RS().window.draw(playerUnit);
 
 		asciiFilter.applyTo(RS().window);

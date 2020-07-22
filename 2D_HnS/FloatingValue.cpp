@@ -43,19 +43,18 @@ void FloatingValue::setFloatingSpeed(double floatingSpeed)
 
 void FloatingValue::update(sf::Time elapsed)
 {
-	bool isReached = doubleEqual(_curValue, _endValue);
 	if (doubleLess(_curValue, _endValue))
 	{
 		_curValue += _floatingSpeed * getSmoothCoefficent() * elapsed.asSeconds();
-		isReached = !doubleLess(_curValue, _endValue);
+		if (!doubleLess(_curValue, _endValue))
+			resetAimValue();
 	}
 	else
 	{
 		_curValue -= _floatingSpeed * getSmoothCoefficent() * elapsed.asSeconds();
-		isReached = doubleLess(_curValue, _endValue);
+		if (doubleLess(_curValue, _endValue))
+			resetAimValue();
 	}
-	if (isReached)
-		resetAimValue();
 }
 
 double FloatingValue::getValue() const
